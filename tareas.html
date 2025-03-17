@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href=" https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <title>TaskMaster</title>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .navbar {
+            background-color: #00cac0;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: white;
+        }
+
+        .container {
+            margin-top: 15px;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .table th {
+            background-color: #d0e3ff;
+        }
+
+        html,
+        body {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            flex: 1;
+            /* Esto hace que el contenido ocupe todo el espacio disponible */
+        }
+
+        footer {
+            background-color: #212529;
+            /* Color oscuro */
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            width: 100%;
+            position: relative;
+            /* Lo mantiene fijo si el contenido es corto */
+            bottom: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">Task<span class="text-dark">Master</span></a>
+            <div class="ms-auto">
+                <a href="#" class="btn btn-outline-light me-2" id="userGreeting">Hola, </a>
+                <button class="btn btn-danger" onclick="logout()">🚪 Salir</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="container">
+        <div class="row">
+            <!-- Formulario de creación de tarea -->
+            <div class="col-md-4">
+                <div class="task-card p-3">
+                    <h4 class="text-primary text-center">Crear Tarea</h4>
+                    <form id="taskForm">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="taskTitle" placeholder="Título" required>
+                        </div>
+                        <div class="mb-3">
+                            <textarea class="form-control" id="taskDescription" placeholder="Descripción"
+                                rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <input type="date" class="form-control" id="taskDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="time" class="form-control" id="taskTime" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Crear Tarea</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Listado de tareas -->
+            <div class="col-md-8">
+                <div class="task-card p-3">
+                    <h4 class="text-primary text-center">Listado de tareas</h4>
+                    <p class="text-warning text-center">
+                        ⚠ Importante, las tareas se listan dependiendo de la fecha programada
+                    </p>
+                    <div class="d-flex mb-3">
+                        <input type="text" class="form-control me-2" id="searchTask" placeholder="Buscar tarea...">
+                        <select class="form-control w-auto" id="filterStatus">
+                            <option value="Todos">Todos</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Realizada">Realizada</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Título</th>
+                                <th>Descripción</th>
+                                <th>Programada</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskList">
+                            <!-- Se llenará con JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="bg-dark text-white text-center py-3 mt-12">
+        <div class="container">
+            <p class="mb-0">© <span id="year"></span> TaskMaster - Todos los derechos reservados</p>
+        </div>
+    </footer>
+
+    <script>
+        let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+        // Renderizar tareas
+        function renderTasks() {
+            const taskList = document.getElementById("taskList");
+            taskList.innerHTML = "";
+
+            if (tasks.length === 0) {
+                taskList.innerHTML = "<tr><td colspan='6' class='text-center text-muted'>No hay tareas registradas.</td></tr>";
+                return;
+            }
+
+            tasks.forEach((task, index) => {
+                taskList.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${task.title}</td>
+                        <td>${task.description}</td>
+                        <td>${task.date} ${task.time}</td>
+                        <td><span class="badge bg-${task.status === 'Pendiente' ? 'warning' : task.status === 'Realizada' ? 'success' : 'danger'}">${task.status}</span></td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="markCompleted(${index})">✔</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteTask(${index})">🗑</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Agregar tarea
+        document.getElementById("taskForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            let title = document.getElementById("taskTitle").value;
+            let description = document.getElementById("taskDescription").value;
+            let date = document.getElementById("taskDate").value;
+            let time = document.getElementById("taskTime").value;
+
+            tasks.push({ title, description, date, time, status: "Pendiente" });
+            console.log(tasks);
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+            renderTasks();
+            document.getElementById("taskForm").reset();
+        });
+
+        // Marcar como realizada
+        function markCompleted(index) {
+            tasks[index].status = "Realizada";
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        // Eliminar tarea
+        function deleteTask(index) {
+            var result = confirm("Estas seguro que deseas borrar este registro?");
+            if (result) {
+                tasks.splice(index, 1);
+                localStorage.setItem("tasks", JSON.stringify(tasks));
+                renderTasks();
+            }
+
+        }
+
+        // Logout
+        function logout() {
+            var reset = confirm("¿Estás seguro de que quieres cerrar sesión?");
+            if (reset) {  // Aquí se usa la variable correcta
+                localStorage.removeItem("loggedInUser");
+                window.location.href = "login.html";
+            }
+        }
+
+
+        // Filtrar tareas por estado
+        document.getElementById("filterStatus").addEventListener("change", function () {
+            let filter = this.value;
+            let filteredTasks = tasks.filter(task => filter === "Todos" || task.status === filter);
+            tasks = filteredTasks;
+            renderTasks();
+        });
+
+        // Buscar tareas por título
+        document.getElementById("searchTask").addEventListener("input", function () {
+            let search = this.value.toLowerCase();
+            let filteredTasks = tasks.filter(task => task.title.toLowerCase().includes(search));
+            tasks = filteredTasks;
+            renderTasks();
+        });
+
+        renderTasks();
+
+
+        // Obtener usuario logueado
+        let loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+        // Mostrar el nombre del usuario en la barra de navegación
+        if (loggedInUser) {
+            document.getElementById("userGreeting").innerText = `Hola, ${loggedInUser.name}`;
+        } else {
+            window.location.href = "login.html"; // Redirige si no hay usuario logueado
+        }
+        // Verifica si hay una sesión activa
+        if (!localStorage.getItem("loggedInUser")) {
+            alert("Debes iniciar sesión primero");
+            window.location.href = "login.html";
+        }
+
+        document.getElementById("year").innerText = new Date().getFullYear();
+
+
+    </script>
+
+</body>
+
+</html>
